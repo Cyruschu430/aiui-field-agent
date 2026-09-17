@@ -30,6 +30,35 @@ gloves off.
 Remote sources are treated as **read-only** in Craft; edits there are not written
 back to GitHub.
 
+## Test the agent (in Craft)
+
+The page is driven by the agent, not by its own UI logic: `AGENTS.md` carries the system
+prompts, and the LLM opens `pages/index` with a slot — `{ step: 'identify' | 'record' |
+'checklist' | 'report' | 'idle' }`. The page accepts a step name or index and falls back to
+`idle`, so a wrong slot can never blank the screen.
+
+Say these in the Craft simulation and check the state it lands on:
+
+| Utterance (Cantonese) | Expected step |
+|---|---|
+| 「集水井喺邊,幾遠?」 | `identify` — 40 米 · 東北 |
+| 「上次幾時檢查?」 | `record` — 10 個月前 · 已逾期 |
+| 「開始做檢查」 | `checklist` — 4/4 項已確認 |
+| 「影相,存報告」 | `report` — RPT-0916-01 已歸檔 |
+
+Then test the input paths the device actually has: temple press / Enter (advance), and the
+back key (should step back inside the page, not exit the app — `event.preventDefault()`).
+
+**What is not wired:** there is no speech recognition in the page, no network call, and no
+record backend. If the LLM does not route to the page, the deterministic path (temple press)
+still walks the same five states — that is the honest fallback, not a bug.
+
+Run the repo's own check before pushing:
+
+```bash
+python3 scripts/check.py     # manifest JSON, page JS syntax, required hooks, ink: prefix, SIMULATION marker
+```
+
 ## Design compliance
 
 The page follows the published AIUI design specification rather than adapting a

@@ -6,7 +6,9 @@
 
 <script setup>
 /* 野外作業 agent — 480x352 單色綠 HUD,跟官方 AIUI 設計規範
-   資料全部係模擬(SIMULATION),冇接任何後端、冇 fetch */
+   資料全部係模擬(SIMULATION),冇接後端、冇 fetch
+   agent 行為靠 AGENTS.md 嘅 System Prompts + page description 決定:
+   LLM 決定開呢一頁同傳入 step,page 只負責渲染 */
 const STEPS = [
   {
     key: 'idle',
@@ -73,16 +75,37 @@ export default {
   data: {
     step: 0,
     steps: STEPS,
-    live: false
+    listening: false,
+    done: false
   },
-  current() {
-    return this.data.steps[this.data.step];
+  /* LLM 開頁時可以帶 slot:step —— 例如 { step: 'record' }
+     接受名字('record')或者索引(2);冇傳就由第一步開始 */
+  onLoad(options) {
+    const wanted = options && options.step;
+    if (wanted === undefined || wanted === null || wanted === '') return;
+    const byName = STEPS.findIndex(s => s.key === String(wanted));
+    const byIndex = Number.isInteger(Number(wanted)) ? Number(wanted) : -1;
+    const i = byName >= 0 ? byName : byIndex;
+    if (i >= 0 && i < STEPS.length) this.setData({ step: i });
+  },
+  /* 喚醒:唔過濾 keyword(官方建議),一收到就入監聽狀態 */
+  onVoiceWakeup(event) {
+    this.setData({ listening: true, done: false });
+    console.log('voice wakeup:', event && event.keyword);
+    setTimeout(() => { this.setData({ listening: false }); }, 4000);
   },
   setStep(i) {
-    const n = Math.max(0, Math.min(this.data.steps.length - 1, i));
-    this.setData({ step: n });
+    this.setData({
+      step: Math.max(0, Math.min(STEPS.length - 1, i)),
+      done: false
+    });
   },
   handleNext() {
+    if (this.data.step >= STEPS.length - 1) {
+      this.setData({ done: true });
+      this.finish();          // 最後一步確認 = 完成任務
+      return;
+    }
     this.setStep(this.data.step + 1);
   },
   handleBack() {
@@ -91,10 +114,16 @@ export default {
   handleReset() {
     this.setStep(0);
   },
-  /* 眼鏡:撳 temple / 講「下一個」都行 —— 兩個冗餘線索 */
+  /* 撳 temple / Enter / 確認鍵 —— 兩個冗餘線索:按鍵 + 畫面反應 */
   onKeyUp(event) {
-    if (event.code === 'Enter' || event.code === 'GlobalHook') {
-      this.data.step >= this.data.steps.length - 1 ? this.handleReset() : this.handleNext();
+    const code = event && event.code;
+    if (code === 'GlobalHook' || code === 'Enter' || code === 'Confirm') {
+      this.handleNext();
+      return;
+    }
+    if (code === 'Back' || code === 'Escape') {
+      event.preventDefault();       // 接管返回鍵,唔好直接退出個 app
+      this.handleBack();
     }
   }
 }
@@ -104,8 +133,8 @@ export default {
   <view class="hud">
     <!-- 頂線:狀態 label + 電量(兩個線索:字 + 位置) -->
     <view class="topbar">
-      <text class="label">{{ steps[step].label }}</text>
-      <text class="meta">離線可用 · 100%</text>
+      <text class="label">{{ listening ? 'LISTENING' : steps[step].label }}</text>
+      <text class="meta">{{ done ? '已完成 · 可以行開' : '離線可用 · 100%' }}</text>
     </view>
     <view class="rule"></view>
 
@@ -113,7 +142,7 @@ export default {
     <view class="body">
       <view class="main">
         <text class="title">{{ steps[step].title }}</text>
-        <text class="say">{{ steps[step].say }}</text>
+        <text class="say">{{ listening ? '講嘢啦,例如:上次幾時檢查' : steps[step].say }}</text>
 
         <view class="rows">
           <view class="row" ink:for="{{ steps[step].rows }}" ink:key="k">
@@ -134,7 +163,7 @@ export default {
     <!-- 底部:操作 + 模擬聲明 -->
     <view class="bottom">
       <button class="btn" bindtap="handleBack">上一步</button>
-      <button class="btn primary" bindtap="handleNext">下一步</button>
+      <button class="btn primary" bindtap="handleNext">{{ done ? '重新開始' : '下一步' }}</button>
       <text class="sim">SIMULATION</text>
     </view>
   </view>
@@ -260,5 +289,15 @@ export default {
   color: rgba(64, 255, 94, 0.24);
   font-size: 11px;
   letter-spacing: 1.5px;
+}
+/* 同一個 page 兩個 hosting slot:對話卡(_current)壓縮,全屏(_blank)保持完整 */
+@media (target: _current) {
+  .hud { padding: 12px 10px; }
+  .title { font-size: 18px; }
+  .big { font-size: 30px; }
+  .side { width: 88px; }
+}
+@media (target: _blank) {
+  .hud { padding: 16px 12px; }
 }
 </style>
