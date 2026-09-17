@@ -14,8 +14,8 @@ const STEPS = [
     title: '野外作業助手',
     say: '望住個沙井,講一句就得',
     rows: [
-      ['提示', '粵語語音,唔使拎手機'],
-      ['就緒', '資產資料已離線備妥']
+      { k: '提示', v: '粵語語音,唔使拎手機' },
+      { k: '就緒', v: '資產資料已離線備妥' }
     ],
     big: '', unit: ''
   },
@@ -25,8 +25,8 @@ const STEPS = [
     title: '集水井 CP-2041',
     say: '喺你前方四十米,方向東北',
     rows: [
-      ['方向', '東北'],
-      ['系統', 'D300 排水管']
+      { k: '方向', v: '東北' },
+      { k: '系統', v: 'D300 排水管' }
     ],
     big: '40', unit: '米'
   },
@@ -36,9 +36,9 @@ const STEPS = [
     title: '上次檢查紀錄',
     say: '上次檢查係十個月前,已經逾期',
     rows: [
-      ['上次檢查', '10 個月前'],
-      ['井深', '1.8 米'],
-      ['井底高程', '41.32 米']
+      { k: '上次檢查', v: '10 個月前' },
+      { k: '井深', v: '1.8 米' },
+      { k: '井底高程', v: '41.32 米' }
     ],
     big: '10', unit: '個月'
   },
@@ -48,10 +48,10 @@ const STEPS = [
     title: '密閉空間檢查',
     say: '四項安全措施,全部已確認',
     rows: [
-      ['氣體檢測', '已確認'],
-      ['機械通風', '已確認'],
-      ['安全帶', '已確認'],
-      ['工作許可證', '已確認']
+      { k: '氣體檢測', v: '已確認' },
+      { k: '機械通風', v: '已確認' },
+      { k: '安全帶', v: '已確認' },
+      { k: '工作許可證', v: '已確認' }
     ],
     big: '4/4', unit: '項'
   },
@@ -61,9 +61,9 @@ const STEPS = [
     title: '報告已歸檔',
     say: '報告已經存好,返寫字樓唔使再入電腦',
     rows: [
-      ['報告編號', 'RPT-0916-01'],
-      ['現場相片', '3 張'],
-      ['狀態', '已落載到案卷']
+      { k: '報告編號', v: 'RPT-0916-01' },
+      { k: '現場相片', v: '3 張' },
+      { k: '狀態', v: '已落載到案卷' }
     ],
     big: '', unit: ''
   }
@@ -116,15 +116,15 @@ export default {
         <text class="say">{{ steps[step].say }}</text>
 
         <view class="rows">
-          <view class="row" a:for="{{ steps[step].rows }}">
-            <text class="rowk">{{ item[0] }}</text>
-            <text class="rowv">{{ item[1] }}</text>
+          <view class="row" ink:for="{{ steps[step].rows }}" ink:key="k">
+            <text class="rowk">{{ item.k }}</text>
+            <text class="rowv">{{ item.v }}</text>
           </view>
         </view>
       </view>
 
       <!-- 大數字:位置 + 尺寸,兩個線索 -->
-      <view class="side" a:if="{{ steps[step].big }}">
+      <view class="side" ink:if="{{ steps[step].big }}">
         <text class="big">{{ steps[step].big }}</text>
         <text class="unit">{{ steps[step].unit }}</text>
       </view>
