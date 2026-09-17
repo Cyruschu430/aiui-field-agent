@@ -73,6 +73,9 @@ employer product, brand or data may appear in this repository.
   (or `Enter`); the back key defaults to leaving the app — call `event.preventDefault()` to
   take it over. Voice wakeup arrives in `onVoiceWakeup(event)`; per the docs, **do not filter
   `event.keyword`** — respond whenever it fires.
+- **The page declares its own render-time contract** in `<script def>`: `description` (keep it
+  observable — say what is *shown*) and `schema.data` (declare every input; the agent reads it to
+  decide when to open the page and what to pass). The page's `step` input is declared there.
 - **`onLoad(options)` is the LLM's slot channel**: the agent opens the page with parameters
   (e.g. `{ step: 'record' }`). Keep slot handling tolerant — accept a step name *or* index.
 - `this.setData({...})` to update; `this.finish()` completes the page task.

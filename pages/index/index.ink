@@ -1,6 +1,15 @@
 <script def>
 {
-  "navigationBarTitleText": "野外作業助手"
+  "navigationBarTitleText": "野外作業助手",
+  "description": "Shows one step of a Hong Kong field-work job on the glasses: where the asset is, its last inspection record, the confined-space safety checklist, or the filed report. Pass step as one of: idle, identify, record, checklist, report. Monochrome-green HUD; every record is simulated.",
+  "schema": {
+    "data": {
+      "type": "object",
+      "properties": {
+        "step": { "type": "string" }
+      }
+    }
+  }
 }
 </script>
 
@@ -78,7 +87,8 @@ export default {
     listening: false,
     done: false
   },
-  /* LLM 開頁時可以帶 slot:step —— 例如 { step: 'record' }
+  /* render-time input:LLM 依 <script def> 嘅 description + schema.data 傳 step 入嚟
+     (官方要求:description 要 observable、每個 input 都要喺 schema.data 聲明)
      接受名字('record')或者索引(2);冇傳就由第一步開始 */
   onLoad(options) {
     const wanted = options && options.step;

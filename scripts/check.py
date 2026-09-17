@@ -61,6 +61,18 @@ def main() -> int:
     except Exception as e:
         fails.append(f"app.json: {e}")
 
+    # 2b) page 級 render-time 契約:description + schema.data(冇就 LLM route 唔到)
+    try:
+        m = json.loads(block(src, "<script def>"))
+        assert isinstance(m.get("description"), str) and len(m["description"]) > 20, \
+            "description 缺失或太短(要 observable)"
+        props = m.get("schema", {}).get("data", {}).get("properties")
+        assert isinstance(props, dict) and props, "schema.data.properties 缺失"
+        assert "step" in props, "schema.data 未聲明 step"
+        ok(f"render-time 契約齊(description + schema.data.step)")
+    except Exception as e:
+        fails.append(f"page 契約: {e}")
+
     # 3) <script setup> JS 語法
     tmp = pathlib.Path(tempfile.mkdtemp()) / "page.js"
     tmp.write_text(block(src, "<script setup>"), encoding="utf-8")
