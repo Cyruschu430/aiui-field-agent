@@ -92,7 +92,17 @@ export default {
   onVoiceWakeup(event) {
     this.setData({ listening: true, done: false });
     console.log('voice wakeup:', event && event.keyword);
-    setTimeout(() => { this.setData({ listening: false }); }, 4000);
+    if (this._listenTimer) clearTimeout(this._listenTimer);   // 唔好疊住上一次
+    this._listenTimer = setTimeout(() => {
+      this.setData({ listening: false });
+      this._listenTimer = null;
+    }, 4000);
+  },
+  onHide() {
+    if (this._listenTimer) {
+      clearTimeout(this._listenTimer);
+      this._listenTimer = null;
+    }
   },
   setStep(i) {
     this.setData({
@@ -195,7 +205,7 @@ export default {
 }
 .meta {
   color: rgba(64, 255, 94, 0.72);
-  font-size: 12px;
+  font-size: 11px;
 }
 .rule {
   height: 1px;
@@ -243,7 +253,7 @@ export default {
   letter-spacing: 1px;
 }
 .rowv {
-  color: rgba(64, 255, 94, 0.88);
+  color: rgba(64, 255, 94, 0.72);
   font-size: 13px;
   font-family: ui-monospace, monospace;
 }

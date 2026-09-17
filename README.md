@@ -53,11 +53,16 @@ back key (should step back inside the page, not exit the app — `event.preventD
 record backend. If the LLM does not route to the page, the deterministic path (temple press)
 still walks the same five states — that is the honest fallback, not a bug.
 
-Run the repo's own check before pushing:
+Run the repo's own check before pushing (also runs in CI on every push — `.github/workflows/check.yml`):
 
 ```bash
-python3 scripts/check.py     # manifest JSON, page JS syntax, required hooks, ink: prefix, SIMULATION marker
+python3 scripts/check.py
 ```
+
+It enforces: manifest JSON, page resolution, page JS syntax, required hooks, `<page>` single root,
+`ink:`-only control prefixes, the **luminance ladder** (`100 / 72 / 48 / 24 / 12 / 6`), the
+**type ladder** (`22 / 16 / 14 / 13 / 12 / 11 / 10`), no `box-shadow` / `animation` / `position: sticky`,
+timer cleanup (`setTimeout` ⇒ `clearTimeout` + `onHide`), and the `SIMULATION` marker.
 
 ## Design compliance
 

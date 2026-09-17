@@ -22,9 +22,14 @@
 
 ## Capabilities
 
-- `page.open`: 開啟 `pages/index`
-- `tts.speak`: 粵語語音輸出
-- **冇** `network.http`、**冇** `fs.*`、**冇** media capture —— 呢個 agent 離線優先,唔會讀寫任何外部系統
+Capability split(唔好撈亂邊個做):
+
+- **由平台 runtime 提供,唔係頁面嘅 code**:
+  - `page.open` —— **LLM** 依上面嘅 System Prompts 決定開 `pages/index`,唔係頁面自己 `window.open()`
+  - `tts.speak` —— runtime 讀出對話內容;頁面**冇**呼叫任何 TTS API
+  - `finish()` —— 頁面通知 runtime「任務完成」(唔係語音/網絡能力)
+- **頁面本身**:唔發網絡請求、唔讀寫檔案、唔擷取媒體 —— 頁面只係渲染步驟狀態
+- **冇** `network.http`、**冇** `fs.*`、**冇** media capture、**冇** agent worker —— 離線優先
 
 ## Configuration
 
