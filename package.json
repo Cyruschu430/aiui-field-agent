@@ -1,0 +1,7 @@
+{
+  "name": "aiui-field-agent",
+  "version": "0.1.0",
+  "description": "Hands-free field-work agent for Rokid AI Glasses (simulated demo)",
+  "main": "app.js",
+  "dependencies": {}
+}

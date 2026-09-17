@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sightcraft Field Ops — 主管 Dashboard(模擬)</title>
+<style>
+  :root{ --bg:#0d1117; --card:#151b22; --line:#242c36; --ink:#e6edf3; --dim:#8b98a5;
+         --ok:#3fb950; --live:#4dff9e; --accent:#58a6ff; --warn:#d29922; --bad:#f85149; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,"PingFang HK","Noto Sans CJK TC",system-ui,sans-serif}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:12px 18px;border-bottom:1px solid var(--line);background:#0b0f14;position:sticky;top:0;z-index:5}
+  .brand{font-weight:700;letter-spacing:.06em}
+  .brand span{color:var(--live)}
+  .meta{display:flex;align-items:center;gap:14px;color:var(--dim);font-size:12px}
+  a{color:var(--accent);text-decoration:none}
+  .pill{border:1px solid var(--line);border-radius:99px;padding:2px 10px;font-size:11px;color:var(--dim)}
+  .pill.on{color:var(--live);border-color:rgba(77,255,158,.4)}
+  .pill.off{color:var(--warn);border-color:rgba(210,153,34,.4)}
+  main{display:grid;gap:14px;padding:16px 18px 40px;
+    grid-template-columns:minmax(420px,1.4fr) minmax(260px,.8fr) minmax(300px,.9fr)}
+  @media (max-width:1080px){ main{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .card h2{font-size:12px;letter-spacing:.12em;color:var(--dim);margin:0 0 10px;text-transform:uppercase;font-weight:600}
+  .card h2 + h2{margin-top:16px}
+  .ev{grid-row:span 2}
+  .tile{position:relative;background:#05080b;border:1px solid var(--line);border-radius:8px;
+    aspect-ratio:16/9;overflow:hidden;cursor:crosshair;display:flex;align-items:center;justify-content:center}
+  .tile img{width:100%;height:100%;object-fit:contain;display:none}
+  .tile img.on{display:block}
+  #hint{color:var(--dim);font-size:12px;padding:0 20px;text-align:center}
+  .mks{position:absolute;inset:0;pointer-events:none}
+  .mk{position:absolute;width:16px;height:16px;margin:-8px 0 0 -8px;border:2px solid var(--live);border-radius:50%;
+    box-shadow:0 0 10px rgba(77,255,158,.7)}
+  .mk:after{content:attr(data-z);position:absolute;left:20px;top:-2px;font-size:10px;color:var(--live);white-space:nowrap}
+  .ctl{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  input{flex:1;min-width:180px;background:#0b0f14;border:1px solid var(--line);color:var(--ink);
+    border-radius:8px;padding:8px 10px;font:inherit;font-size:13px}
+  button{background:#1b2330;border:1px solid var(--line);color:var(--ink);border-radius:8px;
+    padding:8px 12px;font:inherit;font-size:13px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.alt{background:rgba(88,166,255,.14);border-color:rgba(88,166,255,.4)}
+  button.ghost{background:transparent;color:var(--dim)}
+  .note{color:var(--dim);font-size:11px;margin:8px 0 0}
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .kpi{background:#0b0f14;border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .kpi b{display:block;font-size:20px;font-weight:700}
+  .kpi span{font-size:11px;color:var(--dim)}
+  .docs{display:flex;flex-direction:column;gap:8px}
+  .doc{background:#0b0f14;border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:6px;padding:8px 10px}
+  .doc.rep{border-left-color:var(--accent)}
+  .doc b{font-size:13px} .doc p{margin:2px 0 0;font-size:11px;color:var(--dim)}
+  .feed{max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:6px}
+  .row{border-bottom:1px solid var(--line);padding-bottom:6px}
+  .row .t{font-family:ui-monospace,monospace;font-size:11px;color:var(--live)}
+  .row .t i{color:var(--dim);font-style:normal}
+  .row .s{font-size:11.5px;color:#c9d1d9;margin-top:2px}
+  .mapwrap{background:#05080b;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  svg{display:block;width:100%;height:auto}
+  .assets{max-height:24vh;overflow:auto;margin-top:8px;font-size:12px}
+  .assets div{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid var(--line)}
+  .bad{color:var(--bad)} .warn{color:var(--warn)} .dim{color:var(--dim);font-size:12px}
+  .mono{font-family:ui-monospace,monospace}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">SIGHT<span>CRAFT</span> · FIELD OPS(模擬)</div>
+  <div class="meta">
+    <span id="conn" class="pill off">等緊現場…</span>
+    <a href="live.html" target="_blank" rel="noopener">開啟現場眼鏡 tab →</a>
+    <span id="clock" class="mono"></span>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>現場即時畫面 <span class="pill" id="livelabel">未接</span></h2>
+    <div class="tile" id="tile">
+      <img id="frame" alt="現場畫面">
+      <div id="hint">等緊現場影像…<br>眼鏡頁撳「📡 串流俾主管」,或者喺呢度撳「要求現場影相」</div>
+      <div class="mks" id="mks"></div>
+    </div>
+    <div class="ctl">
+      <input id="txt" placeholder="推句提示俾師傅…(例:先檢查左邊牆出水口)">
+      <button id="pushLeft">◀ 標記左</button>
+      <button id="pushCenter">▲ 標記中</button>
+      <button id="pushRight">▶ 標記右</button>
+      <button id="req" class="alt">📸 要求現場影相</button>
+      <button id="clear" class="ghost">清標記</button>
+    </div>
+    <p class="note">點畫面任何位置 = 即時落標記(模擬 telestration)。眼鏡鏡片 1–2 秒內見到,同時會讀出提示。</p>
+  </section>
+
+  <section class="card">
+    <h2>主管 KPI</h2>
+    <div class="kpis" id="kpis"></div>
+    <h2>工單 / 報告</h2>
+    <div id="docs" class="docs"><p class="dim">未收到工單或報告…</p></div>
+  </section>
+
+  <section class="card ev">
+    <h2>現場事件(MCP tool call) <span class="pill" id="evcount">0</span></h2>
+    <div class="feed" id="feed"><p class="dim">等緊現場動作…</p></div>
+  </section>
+
+  <section class="card">
+    <h2>資產清單(模擬 CSDI / DSD)</h2>
+    <div class="mapwrap"><svg id="map" viewBox="0 0 320 200" aria-label="資產分佈圖"></svg></div>
+    <div class="assets" id="assets"></div>
+  </section>
+</main>
+
+<script>
+/* ===== 模擬數據(同 live.html 一致;ponytail: 兩頁共用就抽 data.js,而家 12 行唔值) ===== */
+const ORIGIN = { lat:22.3231, lon:114.2551 };            // 寶琳 / 將軍澳
+const ASSETS = [
+  { id:"CP-2041", alias:"45", type:"集水井", agency:"DSD", dLat:+0.00030, dLon:+0.00021, last:"2025-11-08", status:"OVERDUE" },
+  { id:"CP-2042", alias:"46", type:"集水井", agency:"DSD", dLat:-0.00042, dLon:+0.00055, last:"2026-06-02", status:"SERVICEABLE" },
+  { id:"CP-2047", alias:"47", type:"集水井", agency:"DSD", dLat:+0.00018, dLon:-0.00064, last:"2024-12-19", status:"OVERDUE" },
+  { id:"CP-2055", alias:"55", type:"集水井", agency:"DSD", dLat:+0.00074, dLon:+0.00012, last:"2026-03-11", status:"SERVICEABLE" },
+  { id:"MH-7712", alias:"77", type:"沙井",    agency:"DSD", dLat:-0.00021, dLon:-0.00038, last:"2025-09-30", status:"OVERDUE" },
+  { id:"SL-1187", alias:"1187", type:"斜坡",  agency:"GEO", dLat:+0.00096, dLon:-0.00088, last:"2026-05-20", status:"SERVICEABLE" },
+  { id:"WORKS-TKO-07", alias:"7", type:"工程", agency:"CEDD", dLat:-0.00090, dLon:+0.00070, last:"2026-08-01", status:"SERVICEABLE" }
+];
+const OVERDUE = ASSETS.filter(a => a.status === "OVERDUE").length;
+
+/* ===== 幾何(同 live.html 同一套) ===== */
+const R = 6371000, rad = d => d * Math.PI / 180;
+const dist = (a, b) => {
+  const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+  const x = dLon * Math.cos(rad((a.lat + b.lat) / 2)), y = dLat;
+  return Math.round(Math.sqrt(x*x + y*y) * R);
+};
+const dirZh = b => ["北","東北","東","東南","南","西南","西","西北"][Math.round(((b % 360) + 360) % 360 / 45) % 8];
+const bearing = (a, b) => {
+  const dLon = rad(b.lon - a.lon), y = Math.sin(dLon) * Math.cos(rad(b.lat));
+  const x = Math.cos(rad(a.lat)) * Math.sin(rad(b.lat)) - Math.sin(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.cos(dLon);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+};
+const m2deg = m => m / 111320;
+const ago = iso => { const mo = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 2.63e9));
+  return mo >= 12 ? `${Math.floor(mo/12)} 年 ${mo % 12} 個月` : `${mo} 個月`; };
+
+/* 標記方向:畫面 x% → 左/中/右(眼鏡鏡片上只出相應邊) */
+function markerZone(pct){ return pct < 34 ? "left" : pct < 67 ? "centre" : "right"; }
+const zoneZh = { left:"左", centre:"中", right:"右" };
+
+/* ===== 跨 tab 通道 ===== */
+const CH = ('BroadcastChannel' in window) ? new BroadcastChannel('sightcraft') : null;
+const send = m => { if(CH) CH.postMessage(Object.assign({ from:"dash", t:Date.now() }, m)); };
+const S = { worker:null, asset:null, assetId:null, frames:0, calls:0, docs:[], markers:0 };
+
+/* ---- 現場畫面 ---- */
+const $ = id => document.getElementById(id);
+function setFrame(jpg, label){
+  const im = $("frame");
+  if(typeof jpg !== "string" || !jpg.startsWith("data:image")) return;   // 守住壞 payload
+  im.src = jpg; im.classList.add("on"); $("hint").style.display = "none";
+  S.frames++;
+  const ts = new Date().toLocaleTimeString("zh-HK", { hour12:false });
+  $("livelabel").textContent = (label || "LIVE") + " · " + ts;
+  $("livelabel").className = "pill on";
+  renderKpis();
+}
+function addMarker(pct, text){
+  const z = markerZone(pct);
+  const el = document.createElement("div");
+  el.className = "mk"; el.style.left = pct + "%";
+  el.style.top = (34 + (S.markers % 3) * 16) + "%";
+  el.dataset.z = `標記${zoneZh[z]}` + (text ? " · " + text.slice(0, 18) : "");
+  $("mks").appendChild(el);
+  S.markers++;
+  return z;
+}
+function pushMarker(pct){
+  const text = $("txt").value.trim() || "CHECK THIS POINT";
+  const textTC = $("txt").value.trim() || "檢查呢個位置";
+  const z = addMarker(pct, $("txt").value.trim());
+  send({ type:"push", text, textTC, marker:"MARKER-" + z.toUpperCase(), session:"RA-LIVE", expert:"SUPERVISOR" });
+  $("txt").value = "";
+}
+$("tile").addEventListener("click", e => {
+  if(!$("frame").classList.contains("on")) return;
+  const r = $("tile").getBoundingClientRect();
+  pushMarker(Math.round((e.clientX - r.left) / r.width * 100));
+});
+$("pushLeft").addEventListener("click",   () => pushMarker(16));
+$("pushCenter").addEventListener("click", () => pushMarker(50));
+$("pushRight").addEventListener("click",  () => pushMarker(84));
+$("req").addEventListener("click", () => { send({ type:"req" }); $("livelabel").textContent = "已要求影相…"; });
+$("clear").addEventListener("click", () => { $("mks").innerHTML = ""; S.markers = 0; });
+
+/* ---- KPI / 事件 ---- */
+function renderKpis(){
+  const near = S.worker ? ASSETS.map(a => ({ ...a, d:dist(S.worker, { lat:ORIGIN.lat + a.dLat, lon:ORIGIN.lon + a.dLon }) }))
+                                .sort((x, y) => x.d - y.d) : [];
+  $("kpis").innerHTML = [
+    ["現場畫面", S.frames + " 張"],
+    ["MCP 呼叫", S.calls + " 次"],
+    ["標記推送", S.markers + " 個"],
+    ["逾期資產", OVERDUE + " 項"],
+    ["最近資產", near[0] ? `${near[0].id}(${near[0].d} 米)` : "—"],
+    ["師傅位置", S.worker ? `${S.worker.lat.toFixed(4)}, ${S.worker.lon.toFixed(4)}` : "—"]
+  ].map(([k, v]) => `<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join("");
+}
+function addEvent(m){
+  S.calls++;
+  $("evcount").textContent = S.calls + " 次";
+  const t = new Date(m.t).toLocaleTimeString("zh-HK", { hour12:false });
+  const row = document.createElement("div");
+  row.className = "row";
+  row.innerHTML = `<div class="t">${t} <i>·</i> ${m.tool} <i>(${m.args})</i> <i>·</i> ${m.ms} ms</div>
+                   ${m.say ? `<div class="s">${m.say}</div>` : ""}`;
+  const feed = $("feed");
+  feed.querySelector(".dim") && (feed.innerHTML = "");
+  feed.prepend(row);
+  while(feed.children.length > 70) feed.lastChild.remove();
+  if(/work_order_create/.test(m.tool)) addDoc("wo", m.args, "由現場自動開出 · 已連 GIS 圖徵");
+  if(/report_generate/.test(m.tool)) addDoc("rep", m.args, "檢查報告 · 相片已附 · 已同步");
+  renderKpis();
+}
+function addDoc(kind, no, note){
+  if(S.docs.some(d => d.no === no)) return;
+  S.docs.unshift({ kind, no, note });
+  $("docs").innerHTML = S.docs.map(d =>
+    `<div class="doc ${d.kind === "rep" ? "rep" : ""}"><b>${d.no}</b><p>${d.note}</p></div>`).join("");
+}
+
+/* ---- 資產 + 地圖 ---- */
+function renderAssets(){
+  const rows = ASSETS.map(a => {
+    const d = S.worker ? dist(S.worker, { lat:ORIGIN.lat + a.dLat, lon:ORIGIN.lon + a.dLon }) : null;
+    return `<div><span>${a.id} <span class="dim">${a.type} · ${a.agency}</span></span>
+      <span class="${a.status === "OVERDUE" ? "bad" : "dim"}">${d !== null ? d + " 米 · " : ""}${a.status === "OVERDUE" ? "逾期 " + ago(a.last) : "上次檢查 " + ago(a.last)}</span></div>`;
+  }).join("");
+  $("assets").innerHTML = rows;
+}
+function renderMap(){
+  const W = 320, H = 200, pad = 18;
+  const xs = ASSETS.map(a => a.dLon), ys = ASSETS.map(a => a.dLat);
+  const x0 = Math.min(...xs, 0) - 0.0006, x1 = Math.max(...xs, 0) + 0.0006;
+  const y0 = Math.min(...ys, 0) - 0.0006, y1 = Math.max(...ys, 0) + 0.0006;
+  const px = a => pad + (a.dLon - x0) / (x1 - x0) * (W - pad*2);
+  const py = a => H - pad - (a.dLat - y0) / (y1 - y0) * (H - pad*2);
+  const scale = (W - pad*2) / (x1 - x0) * 360;            // 度 → 像素(粗略)
+  const ringR = m2deg(100) * scale;
+  let svg = `<circle cx="${px({dLon:0})}" cy="${py({dLat:0})}" r="${ringR}" fill="rgba(88,166,255,.08)" stroke="rgba(88,166,255,.35)"/>`;
+  ASSETS.forEach(a => {
+    const over = a.status === "OVERDUE";
+    svg += `<circle cx="${px(a)}" cy="${py(a)}" r="4" fill="${over ? "#f85149" : "#3fb950"}"/>`;
+    svg += `<text x="${px(a) + 7}" y="${py(a) + 3.5}" font-size="8" fill="#8b98a5">${a.alias} 號</text>`;
+  });
+  if(S.worker){
+    const w = { dLon:(S.worker.lon - ORIGIN.lon), dLat:(S.worker.lat - ORIGIN.lat) };
+    svg += `<circle cx="${px(w)}" cy="${py(w)}" r="5.5" fill="none" stroke="#4dff9e" stroke-width="2"/>
+            <text x="${px(w) + 8}" y="${py(w) - 6}" font-size="8" fill="#4dff9e">師傅</text>`;
+  }
+  $("map").innerHTML = svg;
+}
+
+/* ---- 收現場訊息 ---- */
+if(CH){
+  CH.onmessage = e => {
+    const m = e.data || {};
+    if(m.from !== "glasses") return;
+    if(m.type === "hello" || m.type === "status"){
+      S.worker = { lat:m.lat, lon:m.lon };
+      S.assetId = m.asset || S.assetId;
+      $("conn").textContent = "現場已連線"; $("conn").className = "pill on";
+      if(m.type === "hello") addEvent({ tool:"glasses_hello", args:"eye HUD", ms:12, say:"現場眼鏡已連線,開始收現場事件。", t:m.t });
+      renderAssets(); renderMap(); renderKpis();
+      return;
+    }
+    if(m.type === "frame"){ setFrame(m.jpg, m.label); return; }
+    if(m.type === "event"){ addEvent(m); return; }
+  };
+}
+
+/* ---- init ---- */
+$("clock").textContent = new Date().toLocaleString("zh-HK", { hour12:false });
+renderKpis(); renderAssets(); renderMap();
+setInterval(() => $("clock").textContent = new Date().toLocaleString("zh-HK", { hour12:false }), 1000);
+send({ type:"hello" });                                     // 叫現場頁回報一次
+</script>
+</body>
+</html>
